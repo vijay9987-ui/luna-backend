@@ -189,7 +189,7 @@ exports.addToCart = async (req, res) => {
   try {
     // Find or create cart for user
     let cart = await Cart.findOne({ user: userId }).populate("products.product");
-    
+
     if (!cart) {
       // Create a new cart if it doesn't exist
       cart = new Cart({ user: userId, products: [] });
@@ -217,9 +217,9 @@ exports.addToCart = async (req, res) => {
       if (color) cartItem.color = color;
       if (size) cartItem.size = size;
     } else {
-      cart.products.push({ 
-        product: productId, 
-        quantity: 1, 
+      cart.products.push({
+        product: productId,
+        quantity: 1,
         price: product.price,
         color: color || null,
         size: size || null
@@ -284,7 +284,7 @@ exports.addToCart = async (req, res) => {
 
 exports.removeFromCart = async (req, res) => {
   const { userId, productId } = req.params;  // Getting userId and productId from request parameters
-  
+
   try {
     // Find the user's cart
     let cart = await Cart.findOne({ user: userId }).populate("products.product");
@@ -360,7 +360,7 @@ exports.getCart = async (req, res) => {
 
   try {
     const cart = await Cart.findOne({ user: userId }).populate("products.product");
-    
+
     if (!cart) {
       return res.status(200).json({
         message: "Cart is empty",
@@ -426,6 +426,27 @@ exports.getCart = async (req, res) => {
   }
 };
 
+exports.getCartCount = async (req, res) => {
+  const { userId } = req.params;
+
+  try {
+    const cart = await Cart.findOne({ user: userId });
+
+    if (!cart || !cart.products || cart.products.length === 0) {
+      return res.status(200).json({ cartCount: 0 });
+    }
+
+    // Total quantity (not total unique items, but sum of all quantities)
+    const cartCount = cart.products.reduce((total, item) => total + item.quantity, 0);
+
+    res.status(200).json({ cartCount });
+  } catch (error) {
+    console.error("Cart count error:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+
 // // 3️⃣ Remove product from cart
 // exports.removeFromCart = async (req, res) => {
 //   const { userId, productId } = req.params;
@@ -443,11 +464,11 @@ exports.getCart = async (req, res) => {
 //         (color !== undefined ? item.color === color : true)
 //       )
 //     );
-    
+
 //     // Recalculate totals
 //     let subTotal = 0;
 //     let totalItems = 0;
-    
+
 //     cart.products.forEach(item => {
 //       subTotal += item.price * item.quantity; // Use item.price (stored at time of adding)
 //       totalItems += item.quantity;
@@ -559,5 +580,125 @@ exports.deleteAddress = async (req, res) => {
   } catch (err) {
     console.error("Error deleting address:", err);
     res.status(500).json({ error: "Server error" });
+  }
+};
+
+
+
+exports.placeOrder = async (req, res) => {
+  const { userId } = req.params; // Get userId from params
+  const { shippingAddress, paymentMethod } = req.body;
+
+  // Debugging: log userId to see if it's being passed correctly
+  console.log("Received userId:", userId);
+
+  try {
+    // Fetch the user and populate the 'myCart' reference which is an array of Cart
+    const user = await User.findById(userId).populate({
+      path: 'myCart', // Populate the 'myCart' array (references to Cart model)
+      populate: {
+        path: 'products.product', // Populate the 'product' reference within each cart item
+        select: 'name price' // Select only necessary fields (you can add more if needed)
+      }
+    });
+
+    // Check if the user exists
+    if (!user) {
+      console.log(`User with ID ${userId} not found`);
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Check if the user has items in their cart
+    if (!user.myCart || user.myCart.length === 0 || !user.myCart[0].products || user.myCart[0].products.length === 0) {
+      return res.status(400).json({ message: "Cart is empty" });
+    }
+
+    // Prepare order products from the populated cart data
+    const orderProducts = user.myCart[0].products.map((item) => ({
+      productId: item.product._id, // Product ID from the populated product reference
+      quantity: item.quantity,     // Quantity from the cart item
+      price: item.product.price,   // Price from the product reference
+      color: item.color,           // Color from the cart item
+      size: item.size,             // Size from the cart item
+    }));
+
+    // Calculate totals
+    const subTotal = orderProducts.reduce((acc, item) => acc + item.price * item.quantity, 0);
+    const deliveryCharge = subTotal > 500 ? 0 : 40; // Example: Delivery charge is 0 if subTotal > 500, otherwise 40
+    const totalAmount = subTotal + deliveryCharge;
+
+    // Create the order
+    const newOrder = new Order({
+      userId,
+      products: orderProducts,
+      shippingAddress,
+      paymentMethod: paymentMethod || "COD", // Default payment method is COD
+      totalAmount,
+      deliveryCharge, // Include delivery charge
+      orderStatus: "Pending",
+    });
+
+    const savedOrder = await newOrder.save();
+
+    // Push the order ID to the user's myOrders[] array
+    user.myOrders.push(savedOrder._id);
+
+    // Clear the cart (myCart) after placing the order
+    user.myCart = []; // Empty the user's cart
+    user.totalItems = 0;
+    user.subTotal = 0;
+    user.cartTotal = 0;
+    user.deliveryCharge = 0;
+    user.finalAmount = 0;
+    user.totalPrice = 0;
+
+    await user.save();
+
+    // Respond with the order data
+    res.status(201).json({
+      message: "Order placed and linked to user successfully",
+      order: savedOrder,
+    });
+  } catch (error) {
+    // Log the error to see the full stack trace
+    console.error("Place order error:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+
+exports.getMyOrders = async (req, res) => {
+  const { userId } = req.params;
+
+  console.log("Received userId:", userId);
+
+  try {
+    const user = await User.findById(userId).populate({
+      path: 'myOrders',
+      populate: {
+        path: 'products.productId', // 👈 fixed this line
+        select: 'name price images', // add more fields if needed
+      },
+    });
+
+    if (!user) {
+      console.log(`User with ID ${userId} not found`);
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    if (!user.myOrders || user.myOrders.length === 0) {
+      return res.status(200).json({
+        message: "No orders found",
+        orders: [],
+      });
+    }
+
+    res.status(200).json({
+      message: "Orders fetched successfully",
+      orders: user.myOrders,
+    });
+  } catch (error) {
+    console.error("Get orders error:", error);
+    res.status(500).json({ message: "Server error" });
   }
 };

@@ -1,3 +1,6 @@
+const mongoose = require("mongoose");
+
+
 const OrderSchema = new mongoose.Schema({
     userId: {
       type: mongoose.Schema.Types.ObjectId,
@@ -33,6 +36,10 @@ const OrderSchema = new mongoose.Schema({
       enum: ['Pending', 'Confirmed', 'Shipped', 'Delivered', 'Cancel request', 'Cancelled'],
       default: 'Pending',
     },
+    deliveryCharge: {  // ✅ New field added here
+    type: Number,
+    default: 0,   // Default delivery charge can be 0, or whatever you need
+  },
     createdAt: {
       type: Date,
       default: Date.now,
