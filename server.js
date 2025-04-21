@@ -14,7 +14,7 @@ const PORT = 5000;
 // Middleware
 // CORS Configuration to allow multiple origins
 app.use(cors({
-    origin: ['http://localhost:5173', 'https://luna-ecom1.onrender.com'],  // Multiple allowed origins
+    origin: ['http://localhost:5173', 'https://luna-two-lime.vercel.app/'],  // Multiple allowed origins
     methods: ['GET', 'POST', 'PUT', 'DELETE'],  // Allowed HTTP methods
     credentials: true  // Allow cookies if needed
 }));
