@@ -22,6 +22,54 @@ exports.getAllProducts = async (req, res) => {
   }
 };
 
+
+
+// Get trending products
+exports.getTrendingProducts = async (req, res) => {
+  try {
+    const products = await Product.find({ isTrending: true }).limit(10);
+    res.status(200).json(products);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+
+
+
+// Get new arrival products
+exports.getNewArrivals = async (req, res) => {
+  try {
+    const products = await Product.find().sort({ createdAt: -1 }).limit(10);
+    res.status(200).json(products);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+
+
+// Get best seller products
+exports.getBestSellers = async (req, res) => {
+  try {
+    const products = await Product.find().sort({ salesCount: -1 }).limit(10);
+    res.status(200).json(products);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+
+// Get products on sale
+exports.getOnSaleProducts = async (req, res) => {
+  try {
+    const products = await Product.find({ discount: { $gt: 0 } }).limit(10);
+    res.status(200).json(products);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
 // Get product by ID
 exports.getProductById = async (req, res) => {
   try {

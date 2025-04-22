@@ -8,7 +8,11 @@ const {
   deleteProduct,
   addToWishlist,
   getCottonShirtProducts,
-  getCottonSareeProducts
+  getCottonSareeProducts,
+  getTrendingProducts,
+  getNewArrivals,
+  getBestSellers,
+  getOnSaleProducts
 } = require('../controllers/productController');
 
 router.post('/create-product', createProduct);
@@ -19,6 +23,17 @@ router.delete('/deleteproducts/:id', deleteProduct);
 router.post("/wishlist/:userId", addToWishlist);
 router.get('/cotton-shirt', getCottonShirtProducts);
 router.get('/cotton-saree', getCottonSareeProducts);
+// Get trending products
+router.get('/trending', getTrendingProducts);
+
+// Get new arrivals
+router.get('/new-arrivals', getNewArrivals);
+
+// Get best sellers
+router.get('/best-sellers', getBestSellers);
+
+// Get products on sale
+router.get('/on-sale', getOnSaleProducts);
 
 
 
