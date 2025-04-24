@@ -12,6 +12,10 @@ const ProductSchema = new mongoose.Schema({
     required: true,
   },
   originalPrice: Number,
+  discount: {
+    type: Number,
+    default: 0, // e.g., 20 means 20% off
+  },
   stock: {
     type: Number,
     default: 0,
@@ -28,8 +32,8 @@ const ProductSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
-  sizes: [String], // size list only
-  colors: [String], // color list only
+  sizes: [String],
+  colors: [String],
   rating: {
     type: Number,
     default: 0,
@@ -40,9 +44,13 @@ const ProductSchema = new mongoose.Schema({
     },
   ],
   isInWishlist: {
-  type: Boolean,
-  default: false
-},
+    type: Boolean,
+    default: false,
+  },
+  salesCount: {
+    type: Number,
+    default: 0, // total number of times this product was sold
+  },
   sellerId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Shop',
