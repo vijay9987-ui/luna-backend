@@ -1,6 +1,7 @@
 const User = require("../models/User");
 const Product = require('../models/ProductModel');
-const Cart = require('../models/CartModel')
+const Cart = require('../models/CartModel');
+const Order = require('../models/OrderModel');
 
 // POST /api/login
 exports.loginUser = async (req, res) => {
@@ -582,7 +583,6 @@ exports.deleteAddress = async (req, res) => {
     res.status(500).json({ error: "Server error" });
   }
 };
-
 
 
 exports.placeOrder = async (req, res) => {
