@@ -16,6 +16,10 @@ const ProductSchema = new mongoose.Schema({
     type: Number,
     default: 0, // e.g., 20 means 20% off
   },
+  isTrending: {
+    type:Boolean,
+    default:false,
+  },
   stock: {
     type: Number,
     default: 0,
