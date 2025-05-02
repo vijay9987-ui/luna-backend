@@ -97,7 +97,6 @@ exports.getProductsByCategory = async (req, res) => {
   }
 };
 
-const Product = require('../models/Product');
 
 exports.getAllCategories = async (req, res) => {
   try {
