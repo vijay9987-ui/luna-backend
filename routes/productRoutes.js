@@ -4,6 +4,7 @@ const {
   createProduct,
   getAllProducts,
   getProductById,
+  getProductsByCategory,
   updateProduct,
   deleteProduct,
   addToWishlist,
@@ -18,6 +19,7 @@ const {
 router.post('/create-product', createProduct);
 router.get('/getproducts', getAllProducts);
 router.get('/singleproduct/:id', getProductById);
+router.get('/category/:category', getProductsByCategory);
 router.put('/updateproducts/:id', updateProduct);
 router.delete('/deleteproducts/:id', deleteProduct);
 router.post("/wishlist/:userId", addToWishlist);

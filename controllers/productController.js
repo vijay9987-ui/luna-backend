@@ -81,6 +81,22 @@ exports.getProductById = async (req, res) => {
   }
 };
 
+//Get Product By Category
+exports.getProductsByCategory = async (req, res) => {
+  try {
+    const categoryName = req.params.category;
+    const products = await Product.find({ categoryName });
+
+    if (!products || products.length === 0) {
+      return res.status(404).json({ message: "No products found in this category" });
+    }
+
+    res.status(200).json(products);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
 // Update product
 exports.updateProduct = async (req, res) => {
   try {
@@ -186,4 +202,4 @@ exports.getCottonShirtProducts = async (req, res) => {
 };
 
 
-  
+
