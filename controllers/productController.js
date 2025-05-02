@@ -97,33 +97,32 @@ exports.getProductsByCategory = async (req, res) => {
   }
 };
 
+const Product = require('../models/Product');
+
 exports.getAllCategories = async (req, res) => {
   try {
     const categories = await Product.aggregate([
       {
-        $group: {
-          _id: {
-            categoryName: '$categoryName',
-            subcategoryName: '$subcategoryName',
-          },
-        },
+        $sort: { createdAt: -1 }
       },
       {
         $group: {
-          _id: '$_id.categoryName',
-          subcategories: {
-            $addToSet: '$_id.subcategoryName',
-          },
-        },
+          _id: '$categoryName',
+          subcategories: { $addToSet: '$subcategoryName' },
+          image: { $first: { $arrayElemAt: ["$images", 0] } } // pick first image
+        }
       },
       {
         $project: {
           _id: 0,
           categoryName: '$_id',
           subcategories: 1,
-        },
+          imageUrl: '$image'
+        }
       },
-      { $sort: { categoryName: 1 } }
+      {
+        $sort: { categoryName: 1 }
+      }
     ]);
 
     res.status(200).json(categories);
@@ -131,6 +130,7 @@ exports.getAllCategories = async (req, res) => {
     res.status(500).json({ message: 'Failed to fetch categories', error });
   }
 };
+
 
 
 // Update product
