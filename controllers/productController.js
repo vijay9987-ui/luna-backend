@@ -97,7 +97,7 @@ exports.getProductsByCategory = async (req, res) => {
   }
 };
 
-const getAllCategories = async (req, res) => {
+exports.getAllCategories = async (req, res) => {
   try {
     const categories = await Product.aggregate([
       {
