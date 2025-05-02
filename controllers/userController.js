@@ -702,3 +702,35 @@ exports.getMyOrders = async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 };
+
+
+// Express Route for OTP generation
+const twilio = require('twilio');
+const client = new twilio(process.env.accountSid, process.env.authToken); // Twilio credentials
+
+exports.otpValidate = async (req, res) => {
+    const { mobileNumber } = req.body;
+
+    if (!mobileNumber || mobileNumber.length !== 10) {
+        return res.status(400).json({ error: 'Invalid mobile number' });
+    }
+
+    const otp = Math.floor(100000 + Math.random() * 900000); // Generate a 6-digit OTP
+
+    try {
+        // Send OTP via SMS using Twilio
+        await client.messages.create({
+            body: `Your OTP for Lunamercandise is ${otp}`,
+            from: '+17792464381',  // Your Twilio phone number
+            to: `+91${mobileNumber}`  // User's mobile number
+        });
+
+        // Store OTP temporarily (for simplicity, in-memory or in DB)
+        // You could store it in a cache like Redis or a database.
+        otpStore[mobileNumber] = otp;
+
+        res.status(200).json({ message: 'OTP sent successfully' });
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to send OTP' });
+    }
+};
