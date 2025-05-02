@@ -586,81 +586,80 @@ exports.deleteAddress = async (req, res) => {
 
 
 exports.placeOrder = async (req, res) => {
-  const { userId } = req.params; // Get userId from params
-  const { shippingAddress, paymentMethod } = req.body;
-
-  // Debugging: log userId to see if it's being passed correctly
-  console.log("Received userId:", userId);
+  const { userId } = req.params;
+  const { shippingAddress, paymentMethod, selectedProductIds } = req.body; // Add selectedProductIds
 
   try {
-    // Fetch the user and populate the 'myCart' reference which is an array of Cart
     const user = await User.findById(userId).populate({
-      path: 'myCart', // Populate the 'myCart' array (references to Cart model)
+      path: 'myCart',
       populate: {
-        path: 'products.product', // Populate the 'product' reference within each cart item
-        select: 'name price' // Select only necessary fields (you can add more if needed)
+        path: 'products.product',
+        select: 'name price'
       }
     });
 
-    // Check if the user exists
     if (!user) {
-      console.log(`User with ID ${userId} not found`);
       return res.status(404).json({ message: "User not found" });
     }
 
-    // Check if the user has items in their cart
     if (!user.myCart || user.myCart.length === 0 || !user.myCart[0].products || user.myCart[0].products.length === 0) {
       return res.status(400).json({ message: "Cart is empty" });
     }
 
-    // Prepare order products from the populated cart data
-    const orderProducts = user.myCart[0].products.map((item) => ({
-      productId: item.product._id, // Product ID from the populated product reference
-      quantity: item.quantity,     // Quantity from the cart item
-      price: item.product.price,   // Price from the product reference
-      color: item.color,           // Color from the cart item
-      size: item.size,             // Size from the cart item
+    // Filter products based on selectedProductIds if provided
+    const cartProducts = user.myCart[0].products;
+    const productsToOrder = selectedProductIds 
+      ? cartProducts.filter(item => selectedProductIds.includes(item.product._id.toString()))
+      : cartProducts;
+
+    if (productsToOrder.length === 0) {
+      return res.status(400).json({ message: "No selected items found in cart" });
+    }
+
+    const orderProducts = productsToOrder.map((item) => ({
+      productId: item.product._id,
+      quantity: item.quantity,
+      price: item.product.price,
+      color: item.color,
+      size: item.size,
     }));
 
     // Calculate totals
     const subTotal = orderProducts.reduce((acc, item) => acc + item.price * item.quantity, 0);
-    const deliveryCharge = subTotal > 500 ? 0 : 40; // Example: Delivery charge is 0 if subTotal > 500, otherwise 40
+    const deliveryCharge = subTotal > 500 ? 0 : 40;
     const totalAmount = subTotal + deliveryCharge;
 
-    // Create the order
     const newOrder = new Order({
       userId,
       products: orderProducts,
       shippingAddress,
-      paymentMethod: paymentMethod || "COD", // Default payment method is COD
+      paymentMethod: paymentMethod || "COD",
       totalAmount,
-      deliveryCharge, // Include delivery charge
+      deliveryCharge,
       orderStatus: "Pending",
     });
 
     const savedOrder = await newOrder.save();
-
-    // Push the order ID to the user's myOrders[] array
     user.myOrders.push(savedOrder._id);
 
-    // Clear the cart (myCart) after placing the order
-    user.myCart = []; // Empty the user's cart
-    user.totalItems = 0;
-    user.subTotal = 0;
-    user.cartTotal = 0;
-    user.deliveryCharge = 0;
-    user.finalAmount = 0;
-    user.totalPrice = 0;
+    // Remove only the ordered items from cart
+    user.myCart[0].products = cartProducts.filter(
+      item => !productsToOrder.includes(item)
+    );
+    
+    // Recalculate cart totals
+    user.totalItems = user.myCart[0].products.length;
+    user.subTotal = user.myCart[0].products.reduce((sum, item) => sum + (item.product.price * item.quantity), 0);
+    user.deliveryCharge = user.subTotal > 500 ? 0 : 40;
+    user.finalAmount = user.subTotal + user.deliveryCharge;
 
     await user.save();
 
-    // Respond with the order data
     res.status(201).json({
-      message: "Order placed and linked to user successfully",
+      message: "Order placed successfully",
       order: savedOrder,
     });
   } catch (error) {
-    // Log the error to see the full stack trace
     console.error("Place order error:", error);
     res.status(500).json({ message: "Server error" });
   }
