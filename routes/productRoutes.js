@@ -41,8 +41,8 @@ router.get('/best-sellers', getBestSellers);
 // Get products on sale
 router.get('/on-sale', getOnSaleProducts);
 
-router.post('/:userId', addRecentlyViewed);
-router.get('/:userId', getRecentlyViewed);
+router.post('/recently-viewed/:userId', addRecentlyViewed);
+router.get('/recently-viewed/:userId', getRecentlyViewed);
 
 
 
