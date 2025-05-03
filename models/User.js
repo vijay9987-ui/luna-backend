@@ -59,6 +59,10 @@ const userSchema = new mongoose.Schema({
       ref: "Order"
     }
   ],
+  recentlyViewed: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Product'
+  }],  
 
   // Addresses array
   addresses: [addressSchema]  // Assuming Address schema is defined separately

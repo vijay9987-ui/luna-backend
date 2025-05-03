@@ -14,7 +14,9 @@ const {
   getTrendingProducts,
   getNewArrivals,
   getBestSellers,
-  getOnSaleProducts
+  getOnSaleProducts,
+  addRecentlyViewed,
+  getRecentlyViewed
 } = require('../controllers/productController');
 
 router.post('/create-product', createProduct);
@@ -38,6 +40,9 @@ router.get('/best-sellers', getBestSellers);
 
 // Get products on sale
 router.get('/on-sale', getOnSaleProducts);
+
+router.post('/:userId', addRecentlyViewed);
+router.get('/:userId', getRecentlyViewed);
 
 
 
