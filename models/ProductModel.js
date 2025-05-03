@@ -78,4 +78,29 @@ ProductSchema.pre('save', function (next) {
   next();
 });
 
+ProductSchema.pre('findOneAndUpdate', function (next) {
+  const update = this.getUpdate();
+
+  const price = update.price ?? update.$set?.price;
+  const originalPrice = update.originalPrice ?? update.$set?.originalPrice;
+
+  if (price && originalPrice && price < originalPrice) {
+    const discount = Math.round(((originalPrice - price) / originalPrice) * 100);
+    if (update.$set) {
+      update.$set.discount = discount;
+    } else {
+      update.discount = discount;
+    }
+  } else {
+    if (update.$set) {
+      update.$set.discount = 0;
+    } else {
+      update.discount = 0;
+    }
+  }
+
+  next();
+});
+
+
 module.exports = mongoose.model('Product', ProductSchema);
