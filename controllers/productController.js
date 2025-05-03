@@ -40,7 +40,7 @@ exports.getTrendingProducts = async (req, res) => {
 // Get new arrival products
 exports.getNewArrivals = async (req, res) => {
   try {
-    const products = await Product.find().sort({ createdAt: -1 }).limit(10);
+    const products = await Product.find().sort({ createdAt: -1 });
     res.status(200).json(products);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -63,7 +63,7 @@ exports.getBestSellers = async (req, res) => {
 // Get products on sale
 exports.getOnSaleProducts = async (req, res) => {
   try {
-    const products = await Product.find({ discount: { $gt: 0 } }).limit(10);
+    const products = await Product.find({ discount: { $gt: 0 } });
     res.status(200).json(products);
   } catch (error) {
     res.status(500).json({ error: error.message });

@@ -14,11 +14,11 @@ const ProductSchema = new mongoose.Schema({
   originalPrice: Number,
   discount: {
     type: Number,
-    default: 0, // e.g., 20 means 20% off
+    default: 0, // Automatically calculated before saving
   },
   isTrending: {
-    type:Boolean,
-    default:false,
+    type: Boolean,
+    default: false,
   },
   stock: {
     type: Number,
@@ -53,7 +53,7 @@ const ProductSchema = new mongoose.Schema({
   },
   salesCount: {
     type: Number,
-    default: 0, // total number of times this product was sold
+    default: 0,
   },
   sellerId: {
     type: mongoose.Schema.Types.ObjectId,
@@ -63,6 +63,19 @@ const ProductSchema = new mongoose.Schema({
     type: Date,
     default: Date.now,
   },
+});
+
+// Auto-calculate discount before saving
+ProductSchema.pre('save', function (next) {
+  if (this.originalPrice && this.price < this.originalPrice) {
+    const discountPercentage = Math.round(
+      ((this.originalPrice - this.price) / this.originalPrice * 100)
+    );
+    this.discount = discountPercentage;
+  } else {
+    this.discount = 0; // No discount if originalPrice is missing or price >= originalPrice
+  }
+  next();
 });
 
 module.exports = mongoose.model('Product', ProductSchema);
