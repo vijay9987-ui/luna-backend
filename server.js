@@ -6,7 +6,7 @@ const userRoutes = require("./routes/userRoutes");
 const dotEnv = require('dotenv');
 const categoryRoutes = require("./routes/categoryRoutes")
 const productRoutes = require("./routes/productRoutes")
-const adminRoutes = require("./routes/adminRoutes");
+
 
 
 const app = express();
@@ -37,7 +37,7 @@ app.use("/api/users", userRoutes);
 app.use("/api/category", categoryRoutes);
 app.use("/api/products", productRoutes);
 
-app.use("/api/admin", adminRoutes);
+
 
 
 
