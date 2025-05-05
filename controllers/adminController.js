@@ -4,7 +4,7 @@ const Product = require("../models/ProductModel");
 
 
 // In your backend routes (adminRoutes.js)
-exports.adminLogin = async (req, res) => {
+const adminLogin = async (req, res) => {
     try {
       const { mobileNumber } = req.body;
       
