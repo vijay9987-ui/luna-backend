@@ -11,13 +11,13 @@ const userSchema = new mongoose.Schema({
     unique: true
   },
   profile: profileSchema,
-  
+
   // Instead of embedding products directly, you can reference the Cart model
   myCart: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: "Cart"  // Reference to the Cart model, which will hold products and their details
   }],
-  
+
   // User summary fields that can be updated based on cart calculations
   totalItems: {
     type: Number,
@@ -62,7 +62,11 @@ const userSchema = new mongoose.Schema({
   recentlyViewed: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Product'
-  }],  
+  }],
+  isAdmin: {
+    type: Boolean,
+    default: false,
+  },
 
   // Addresses array
   addresses: [addressSchema]  // Assuming Address schema is defined separately
