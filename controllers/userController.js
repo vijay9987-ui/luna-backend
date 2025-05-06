@@ -2,6 +2,8 @@ const User = require("../models/User");
 const Product = require('../models/ProductModel');
 const Cart = require('../models/CartModel');
 const Order = require('../models/OrderModel');
+const QRCode = require('qrcode');  // Import the qrcode package
+
 
 // POST /api/login
 exports.loginUser = async (req, res) => {
@@ -585,86 +587,145 @@ exports.deleteAddress = async (req, res) => {
 };
 
 
+
 exports.placeOrder = async (req, res) => {
   const { userId } = req.params; // Get userId from params
   const { shippingAddress, paymentMethod } = req.body;
 
-  // Debugging: log userId to see if it's being passed correctly
   console.log("Received userId:", userId);
 
   try {
-    // Fetch the user and populate the 'myCart' reference which is an array of Cart
+    // Fetch the user and cart details
     const user = await User.findById(userId).populate({
-      path: 'myCart', // Populate the 'myCart' array (references to Cart model)
+      path: 'myCart',
       populate: {
-        path: 'products.product', // Populate the 'product' reference within each cart item
-        select: 'name price' // Select only necessary fields (you can add more if needed)
+        path: 'products.product',
+        select: 'name price'
       }
     });
 
-    // Check if the user exists
+    // Check if user and cart exist
     if (!user) {
       console.log(`User with ID ${userId} not found`);
       return res.status(404).json({ message: "User not found" });
     }
-
-    // Check if the user has items in their cart
     if (!user.myCart || user.myCart.length === 0 || !user.myCart[0].products || user.myCart[0].products.length === 0) {
       return res.status(400).json({ message: "Cart is empty" });
     }
 
-    // Prepare order products from the populated cart data
+    // Prepare order products
     const orderProducts = user.myCart[0].products.map((item) => ({
-      productId: item.product._id, // Product ID from the populated product reference
-      quantity: item.quantity,     // Quantity from the cart item
-      price: item.product.price,   // Price from the product reference
-      color: item.color,           // Color from the cart item
-      size: item.size,             // Size from the cart item
+      productId: item.product._id,
+      quantity: item.quantity,
+      price: item.product.price,
+      color: item.color,
+      size: item.size,
     }));
 
     // Calculate totals
     const subTotal = orderProducts.reduce((acc, item) => acc + item.price * item.quantity, 0);
-    const deliveryCharge = subTotal > 500 ? 0 : 40; // Example: Delivery charge is 0 if subTotal > 500, otherwise 40
+    const deliveryCharge = subTotal > 500 ? 0 : 40; // Delivery charge logic
     const totalAmount = subTotal + deliveryCharge;
 
-    // Create the order
-    const newOrder = new Order({
-      userId,
-      products: orderProducts,
-      shippingAddress,
-      paymentMethod: paymentMethod || "COD", // Default payment method is COD
-      totalAmount,
-      deliveryCharge, // Include delivery charge
-      orderStatus: "Pending",
-    });
+    // Handle UPI payment method
+    if (paymentMethod === "UPI") {
+      // UPI URL for payment
+      const upiUrl = `upi://pay?pa=juleeperween@ybl&am=${totalAmount}&cu=INR`;
 
-    const savedOrder = await newOrder.save();
+      // Generate QR code for the UPI URL
+      QRCode.toDataURL(upiUrl, (err, qrCodeDataURL) => {
+        if (err) {
+          console.error("Error generating QR code:", err);
+          return res.status(500).json({ message: "Error generating QR code" });
+        }
 
-    // Push the order ID to the user's myOrders[] array
-    user.myOrders.push(savedOrder._id);
+        // Respond with the order details and the QR code for payment
+        return res.status(201).json({
+          message: "Order placed successfully. Please transfer the amount to UPI ID: juleeperween@ybl.",
+          upiId: "juleeperween@ybl",
+          amount: totalAmount,
+          paymentStatus: "Pending",  // Payment status set to "Pending"
+          orderStatus: "Pending",    // Order status set to "Pending"
+          qrCode: qrCodeDataURL,    // The generated QR code (base64 image)
+          order: {
+            products: orderProducts,
+            shippingAddress,
+            totalAmount,
+            deliveryCharge
+          }
+        });
+      });
+    } else {
+      // Handle other payment methods (e.g., COD, online payments)
+      const newOrder = new Order({
+        userId,
+        products: orderProducts,
+        shippingAddress,
+        paymentMethod: paymentMethod || "COD",
+        totalAmount,
+        deliveryCharge,
+        orderStatus: "Pending",  // Set orderStatus as "Pending"
+        paymentStatus: "Pending",  // Set paymentStatus as "Pending"
+      });
 
-    // Clear the cart (myCart) after placing the order
-    user.myCart = []; // Empty the user's cart
-    user.totalItems = 0;
-    user.subTotal = 0;
-    user.cartTotal = 0;
-    user.deliveryCharge = 0;
-    user.finalAmount = 0;
-    user.totalPrice = 0;
+      const savedOrder = await newOrder.save();
 
-    await user.save();
+      // Update user's order history
+      user.myOrders.push(savedOrder._id);
+      await user.save();
 
-    // Respond with the order data
-    res.status(201).json({
-      message: "Order placed and linked to user successfully",
-      order: savedOrder,
-    });
+      return res.status(201).json({
+        message: "Order placed and linked to user successfully",
+        orderStatus: "Pending",  // Order status set to "Pending"
+        paymentStatus: "Pending",  // Payment status set to "Pending"
+        order: savedOrder,
+      });
+    }
   } catch (error) {
-    // Log the error to see the full stack trace
     console.error("Place order error:", error);
     res.status(500).json({ message: "Server error" });
   }
 };
+
+
+
+exports.getAllOrders = async (req, res) => {
+  try {
+    // Fetch all orders from the database
+    const orders = await Order.find().populate('userId', 'name email') // Optionally, populate user details like name and email
+      .populate({
+        path: 'products.product',
+        select: 'name price'
+      });
+
+    // Check if orders exist
+    if (!orders || orders.length === 0) {
+      return res.status(404).json({ message: "No orders found" });
+    }
+
+    // Return all orders
+    return res.status(200).json({
+      message: "Orders fetched successfully",
+      orders: orders.map(order => ({
+        orderId: order._id,
+        userId: order.userId,
+        products: order.products,
+        shippingAddress: order.shippingAddress,
+        totalAmount: order.totalAmount,
+        deliveryCharge: order.deliveryCharge,
+        orderStatus: order.orderStatus,
+        paymentStatus: order.paymentStatus,
+        createdAt: order.createdAt
+      }))
+    });
+  } catch (error) {
+    console.error("Error fetching orders:", error);
+    return res.status(500).json({ message: "Server error" });
+  }
+};
+
+
+
 
 
 exports.getMyOrders = async (req, res) => {

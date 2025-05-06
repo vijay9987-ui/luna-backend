@@ -29,13 +29,18 @@ const OrderSchema = new mongoose.Schema({
     },
     paymentMethod: {
       type: String,
-      enum: ['COD', 'Online'],
+      enum: ['COD', 'Online', 'UPI'],
       default: 'COD',
     },
     totalAmount: Number,
     orderStatus: {
       type: String,
       enum: ['Pending', 'Confirmed', 'Shipped', 'Delivered', 'Cancel request', 'Cancelled'],
+      default: 'Pending',
+    },
+    paymentStatus: {
+      type: String,
+      enum: ['Pending', 'Completed', 'Cancelled'],
       default: 'Pending',
     },
     deliveryCharge: {  // ✅ New field added here
