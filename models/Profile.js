@@ -5,8 +5,7 @@ const profileSchema = new mongoose.Schema({
     lastName: String,
     gender: String,
     email: String,
-    mobile: Number,
-    profileImage: String,  // This will store the image URL
+    mobile: Number
 });
 
 module.exports = profileSchema;

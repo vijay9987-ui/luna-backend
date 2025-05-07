@@ -79,10 +79,7 @@ exports.profileUser = async (req, res) => {
 
     if (!user) return res.status(404).json({ message: "User not found" });
 
-    res.status(200).json({
-      profile: user.profile,
-      mobileNumber: user.mobileNumber,
-    });
+    res.status(200).json({ profile: user.profile, mobileNumber: user.mobileNumber });
   } catch (error) {
     console.error("Error fetching profile:", error);
     res.status(500).json({ message: "Internal server error" });
@@ -92,7 +89,7 @@ exports.profileUser = async (req, res) => {
 // PUT /api/users/updateuser/:userId
 exports.updateProfileUser = async (req, res) => {
   const { userId } = req.params;
-  const { firstName, lastName, gender, email, mobile, profileImage } = req.body;
+  const { firstName, lastName, gender, email, mobile } = req.body;
 
   try {
     const user = await User.findById(userId);
@@ -103,7 +100,6 @@ exports.updateProfileUser = async (req, res) => {
     user.profile.lastName = lastName || user.profile.lastName;
     user.profile.gender = gender || user.profile.gender;
     user.profile.email = email || user.profile.email;
-    user.profile.profileImage = profileImage || user.profile.profileImage;
 
     if (mobile) user.mobileNumber = mobile;
 
@@ -120,10 +116,10 @@ exports.updateProfileUser = async (req, res) => {
   }
 };
 
-// POST /api/users/createprofile/:userId
+// Create or update user profile (POST)
 exports.createProfileData = async (req, res) => {
   const { userId } = req.params;
-  const { firstName, lastName, gender, email, mobile, profileImage } = req.body;
+  const { firstName, lastName, gender, email, mobile } = req.body;
 
   try {
     const user = await User.findById(userId);
@@ -134,7 +130,6 @@ exports.createProfileData = async (req, res) => {
       lastName,
       gender,
       email,
-      profileImage,
     };
 
     user.mobileNumber = mobile;
@@ -146,6 +141,9 @@ exports.createProfileData = async (req, res) => {
     res.status(500).json({ message: "Internal Server Error" });
   }
 };
+
+
+
 
 
 
