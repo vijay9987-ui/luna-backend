@@ -587,105 +587,101 @@ exports.deleteAddress = async (req, res) => {
 };
 
 
-
 exports.placeOrder = async (req, res) => {
-  const { userId } = req.params; // Get userId from params
-  const { shippingAddress, paymentMethod } = req.body;
+  const { userId } = req.params;
+  const {
+    shippingAddress,
+    paymentMethod = "COD",
+    products,
+    totalAmount,
+    deliveryCharge
+  } = req.body;
 
-  console.log("Received userId:", userId);
+  console.log("➡️ Received order request for userId:", userId);
+  console.log("➡️ Request body:", req.body);
 
   try {
-    // Fetch the user and cart details
-    const user = await User.findById(userId).populate({
-      path: 'myCart',
-      populate: {
-        path: 'products.product',
-        select: 'name price'
-      }
-    });
+    // Validate input
+    if (!products || products.length === 0) {
+      return res.status(400).json({ message: "No products provided for order" });
+    }
 
-    // Check if user and cart exist
+    if (!shippingAddress || !shippingAddress.addressLine) {
+      return res.status(400).json({ message: "Invalid shipping address" });
+    }
+
+    const user = await User.findById(userId);
     if (!user) {
-      console.log(`User with ID ${userId} not found`);
+      console.log(`❌ User with ID ${userId} not found`);
       return res.status(404).json({ message: "User not found" });
     }
-    if (!user.myCart || user.myCart.length === 0 || !user.myCart[0].products || user.myCart[0].products.length === 0) {
-      return res.status(400).json({ message: "Cart is empty" });
-    }
 
-    // Prepare order products
-    const orderProducts = user.myCart[0].products.map((item) => ({
-      productId: item.product._id,
-      quantity: item.quantity,
-      price: item.product.price,
-      color: item.color,
-      size: item.size,
-    }));
-
-    // Calculate totals
-    const subTotal = orderProducts.reduce((acc, item) => acc + item.price * item.quantity, 0);
-    const deliveryCharge = subTotal > 500 ? 0 : 40; // Delivery charge logic
-    const totalAmount = subTotal + deliveryCharge;
-
-    // Handle UPI payment method
+    // ✅ If payment method is UPI, generate QR code
     if (paymentMethod === "UPI") {
-      // UPI URL for payment
       const upiUrl = `upi://pay?pa=juleeperween@ybl&am=${totalAmount}&cu=INR`;
 
-      // Generate QR code for the UPI URL
-      QRCode.toDataURL(upiUrl, (err, qrCodeDataURL) => {
+      QRCode.toDataURL(upiUrl, async (err, qrCodeDataURL) => {
         if (err) {
-          console.error("Error generating QR code:", err);
-          return res.status(500).json({ message: "Error generating QR code" });
+          console.error("❌ QR code generation error:", err);
+          return res.status(500).json({ message: "Error generating UPI QR code" });
         }
 
-        // Respond with the order details and the QR code for payment
+        const newOrder = new Order({
+          userId,
+          products,
+          shippingAddress,
+          paymentMethod,
+          totalAmount,
+          deliveryCharge,
+          orderStatus: "Pending",
+          paymentStatus: "Pending"
+        });
+
+        const savedOrder = await newOrder.save();
+        user.myOrders.push(savedOrder._id);
+        await user.save();
+
         return res.status(201).json({
-          message: "Order placed successfully. Please transfer the amount to UPI ID: juleeperween@ybl.",
+          message: "Order placed. Please pay via UPI.",
           upiId: "juleeperween@ybl",
           amount: totalAmount,
-          paymentStatus: "Pending",  // Payment status set to "Pending"
-          orderStatus: "Pending",    // Order status set to "Pending"
-          qrCode: qrCodeDataURL,    // The generated QR code (base64 image)
-          order: {
-            products: orderProducts,
-            shippingAddress,
-            totalAmount,
-            deliveryCharge
-          }
+          qrCode: qrCodeDataURL,
+          orderStatus: "Pending",
+          paymentStatus: "Pending",
+          order: savedOrder
         });
       });
     } else {
-      // Handle other payment methods (e.g., COD, online payments)
+      // ✅ Handle COD or other payment methods
       const newOrder = new Order({
         userId,
-        products: orderProducts,
+        products,
         shippingAddress,
-        paymentMethod: paymentMethod || "COD",
+        paymentMethod,
         totalAmount,
         deliveryCharge,
-        orderStatus: "Pending",  // Set orderStatus as "Pending"
-        paymentStatus: "Pending",  // Set paymentStatus as "Pending"
+        orderStatus: "Pending",
+        paymentStatus: "Pending"
       });
 
       const savedOrder = await newOrder.save();
-
-      // Update user's order history
       user.myOrders.push(savedOrder._id);
       await user.save();
 
       return res.status(201).json({
-        message: "Order placed and linked to user successfully",
-        orderStatus: "Pending",  // Order status set to "Pending"
-        paymentStatus: "Pending",  // Payment status set to "Pending"
-        order: savedOrder,
+        message: "Order placed successfully",
+        orderStatus: "Pending",
+        paymentStatus: "Pending",
+        order: savedOrder
       });
     }
+
   } catch (error) {
-    console.error("Place order error:", error);
-    res.status(500).json({ message: "Server error" });
+    console.error("❌ Order placement failed:", error);
+    res.status(500).json({ message: "Server error. Please try again." });
   }
 };
+
 
 
 
