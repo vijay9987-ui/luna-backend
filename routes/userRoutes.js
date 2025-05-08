@@ -4,6 +4,7 @@ const {
     loginUser,
     getUserById,
     updateUser,
+    getAllUsers,
     profileUser,
     updateProfileUser,
     createProfileData,
@@ -26,6 +27,7 @@ router.post("/login", loginUser);
 // Updated routes to use userId instead of mobileNumber
 router.get("/getuser/:userId", getUserById);
 router.put("/setuser/:userId", updateUser);
+router.get('/users', getAllUsers);
 router.post("/user/profiledata/:userId", profileUser);
 router.post("/user/createprofiledata/:userId", createProfileData);
 router.put("/updateuser/:userId", updateProfileUser);
