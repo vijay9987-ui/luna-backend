@@ -5,6 +5,7 @@ const {
     getUserById,
     updateUser,
     getAllUsers,
+    deleteUser,
     profileUser,
     updateProfileUser,
     createProfileData,
@@ -28,6 +29,7 @@ router.post("/login", loginUser);
 router.get("/getuser/:userId", getUserById);
 router.put("/setuser/:userId", updateUser);
 router.get('/users', getAllUsers);
+router.delete('/delete/:userId', deleteUser);
 router.post("/user/profiledata/:userId", profileUser);
 router.post("/user/createprofiledata/:userId", createProfileData);
 router.put("/updateuser/:userId", updateProfileUser);
