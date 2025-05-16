@@ -31,7 +31,8 @@ exports.loginUser = async (req, res) => {
       user: {
         _id: existingUser._id,
         username: existingUser.username,
-        mobileNumber: existingUser.mobileNumber
+        mobileNumber: existingUser.mobileNumber,
+        isAdmin: existingUser.isAdmin
       }
     });
 
