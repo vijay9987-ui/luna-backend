@@ -713,27 +713,40 @@ exports.placeOrder = async (req, res) => {
 
 
 
-
 exports.getAllOrders = async (req, res) => {
   try {
-    // Fetch all orders from the database
-    const orders = await Order.find().populate('userId', 'name email') // Optionally, populate user details like name and email
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+
+    const orders = await Order.find()
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      .populate('userId', 'name email')
       .populate({
-        path: 'products.product',
+        path: 'products.productId',
         select: 'name price'
       });
 
-    // Check if orders exist
     if (!orders || orders.length === 0) {
       return res.status(404).json({ message: "No orders found" });
     }
 
-    // Return all orders
+    const totalOrders = await Order.countDocuments();
+
     return res.status(200).json({
       message: "Orders fetched successfully",
+      currentPage: page,
+      totalPages: Math.ceil(totalOrders / limit),
+      totalOrders,
       orders: orders.map(order => ({
         orderId: order._id,
-        userId: order.userId,
+        user: {
+          id: order.userId._id,
+          name: order.userId.name,
+          email: order.userId.email
+        },
         products: order.products,
         shippingAddress: order.shippingAddress,
         totalAmount: order.totalAmount,
@@ -748,8 +761,6 @@ exports.getAllOrders = async (req, res) => {
     return res.status(500).json({ message: "Server error" });
   }
 };
-
-
 
 
 

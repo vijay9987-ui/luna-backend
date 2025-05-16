@@ -20,7 +20,8 @@ const {
     updateAddress,
     deleteAddress,
     placeOrder,
-    getMyOrders
+    getMyOrders,
+    getAllOrders
 } = require("../controllers/userController");
 
 router.post("/login", loginUser);
@@ -45,6 +46,7 @@ router.put("/update-address/:userId/:addressId", updateAddress);
 router.delete("/remove-address/:userId/:addressId", deleteAddress);
 router.post("/create-order/:userId", placeOrder);
 router.get("/myorders/:userId", getMyOrders);
+router.get("/allorders", getAllOrders);
 
 
 module.exports = router;
