@@ -6,7 +6,6 @@ const path = require("path");
 const dotEnv = require('dotenv');
 
 const userRoutes = require("./routes/userRoutes");
-const categoryRoutes = require("./routes/categoryRoutes");
 const productRoutes = require("./routes/productRoutes");
 
 dotEnv.config();
@@ -38,7 +37,6 @@ mongoose.connect(process.env.MONGODB, {
 
 // API Routes
 app.use("/api/users", userRoutes);
-app.use("/api/category", categoryRoutes);
 app.use("/api/products", productRoutes);
 
 // === Serve React Frontend in Production ===
