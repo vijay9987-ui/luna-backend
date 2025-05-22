@@ -765,6 +765,73 @@ exports.getAllOrders = async (req, res) => {
 
 
 
+
+exports.updateOrderStatus = async (req, res) => {
+  try {
+    const orderId = req.params.orderId;
+    const { orderStatus } = req.body;
+
+    if (!orderStatus) {
+      return res.status(400).json({ message: 'Order status is required' });
+    }
+
+    const order = await Order.findById(orderId);
+    if (!order) {
+      return res.status(404).json({ message: 'Order not found' });
+    }
+
+    order.orderStatus = orderStatus;
+    order.statusHistory.push({ status: orderStatus, updatedAt: new Date() });
+
+    await order.save();
+
+    res.status(200).json({
+      message: 'Order status updated successfully',
+      updatedStatus: order.orderStatus,
+      orderId: order._id
+    });
+  } catch (error) {
+    console.error('Error updating order status:', error);
+    return res.status(500).json({ message: 'Server error' });
+  }
+};
+
+
+
+
+exports.updatePaymentStatus = async (req, res) => {
+  try {
+    const orderId = req.params.orderId;
+    const { paymentStatus } = req.body;
+
+    if (!paymentStatus) {
+      return res.status(400).json({ message: 'Payment status is required' });
+    }
+
+    const order = await Order.findById(orderId);
+
+    if (!order) {
+      return res.status(404).json({ message: 'Order not found' });
+    }
+
+    order.paymentStatus = paymentStatus;
+    await order.save();
+
+    res.status(200).json({
+      message: 'Payment status updated successfully',
+      updatedStatus: order.paymentStatus,
+      orderId: order._id
+    });
+  } catch (error) {
+    console.error('Error updating payment status:', error);
+    return res.status(500).json({ message: 'Server error' });
+  }
+};
+
+
+
+
+
 exports.getMyOrders = async (req, res) => {
   const { userId } = req.params;
 
@@ -800,3 +867,96 @@ exports.getMyOrders = async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 };
+
+
+exports.uploadProfileImage = async (req, res) => {
+  try {
+    const userId = req.params.userId;
+    const imagePath = req.file.filename;
+
+    const user = await User.findByIdAndUpdate(
+      userId,
+      { profileImage: imagePath },
+      { new: true }
+    );
+
+    if (!user) return res.status(404).json({ error: 'User not found' });
+
+    res.status(200).json({
+      message: 'Profile image uploaded successfully',
+      profileImage: `/uploads/profileImages/${user.profileImage}`
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+exports.updateProfileImage = async (req, res) => {
+  try {
+    const userId = req.params.userId;  // Now from URL params
+    const imagePath = req.file.filename;
+
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ error: 'User not found' });
+
+    user.profileImage = imagePath;
+    await user.save();
+
+    res.status(200).json({
+      message: 'Profile image updated successfully',
+      profileImage: `/uploads/profileImages/${user.profileImage}`
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+
+exports.getOrderStatusHistory = async (req, res) => {
+  try {
+    const { userId, orderId } = req.params;
+
+    const order = await Order.findById(orderId).select('statusHistory userId');
+
+    if (!order) {
+      return res.status(404).json({ message: 'Order not found' });
+    }
+
+    // Check if the order belongs to the user
+    if (order.userId.toString() !== userId) {
+      return res.status(403).json({ message: 'You are not authorized to view this order status' });
+    }
+
+    res.status(200).json({
+      message: 'Order status history fetched successfully',
+      statusHistory: order.statusHistory
+    });
+  } catch (error) {
+    console.error('Error fetching status history:', error);
+    return res.status(500).json({ message: 'Server error' });
+  }
+};
+
+
+
+exports.getTotalRevenue = async (req, res) => {
+  try {
+    // Only include orders that are completed and/or paid
+    const completedOrders = await Order.find({
+      paymentStatus: 'Paid' // or use orderStatus: 'Delivered', if needed
+    });
+
+    const totalRevenue = completedOrders.reduce((acc, order) => acc + order.totalAmount, 0);
+
+    res.status(200).json({
+      message: 'Total revenue fetched successfully',
+      totalRevenue,
+      numberOfOrders: completedOrders.length
+    });
+  } catch (error) {
+    console.error('Error calculating revenue:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+

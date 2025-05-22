@@ -18,6 +18,18 @@ const userSchema = new mongoose.Schema({
     ref: "Cart"  // Reference to the Cart model, which will hold products and their details
   }],
 
+  profileImage: {
+  type: String, // This will store the filename or image URL
+  default: '',  // Or a default avatar if you want
+},
+
+statusHistory: [
+  {
+    status: { type: String },
+    updatedAt: { type: Date, default: Date.now }
+  }
+],
+
   // User summary fields that can be updated based on cart calculations
   totalItems: {
     type: Number,
