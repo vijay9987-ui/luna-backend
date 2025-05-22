@@ -1,5 +1,8 @@
 const Product = require('../models/ProductModel');
 const User = require('../models/User')
+const multer = require('multer');
+const path = require('path');
+const Banner = require('../models/Banner');
 
 // Create product
 exports.createProduct = async (req, res) => {
@@ -283,6 +286,88 @@ exports.getRecentlyViewed = async (req, res) => {
     res.status(200).json(user.recentlyViewed);
   } catch (error) {
     res.status(500).json({ message: 'Server error', error });
+  }
+};
+
+
+//banner code 
+// Set storage engine for banner images
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, 'uploads/banners/'); // Upload to the banners folder
+  },
+  filename: function (req, file, cb) {
+    const ext = path.extname(file.originalname); // Get the file extension
+    cb(null, Date.now() + '-' + Math.round(Math.random() * 1E9) + ext); // Unique file name
+  }
+});
+
+// File filter for images only
+const fileFilter = (req, file, cb) => {
+  if (file.mimetype.startsWith('image/')) {
+    cb(null, true); // Accept image files
+  } else {
+    cb(new Error('Only image files are allowed!'), false); // Reject non-image files
+  }
+};
+
+// Multer setup
+const upload = multer({
+  storage: storage,
+  fileFilter: fileFilter,
+  limits: {
+    fileSize: 1024 * 1024 * 5 // Max 5MB per file
+  }
+}).array('images[]', 10); // Handle multiple banner images (up to 10)
+
+// Controller function to handle banner uploads
+exports.uploadBanners = (req, res) => {
+  upload(req, res, async (err) => {
+    try {
+      // If any error occurs during the file upload process
+      if (err) {
+        return res.status(400).json({ error: err.message });
+      }
+
+      if (!req.files || req.files.length === 0) {
+        return res.status(400).json({ error: "No files uploaded" });
+      }
+
+      // Map the uploaded files to the image paths
+      const images = req.files.map(file => `/uploads/banners/${file.filename}`);
+
+      // Create a new Banner document with the array of images
+      const newBanner = new Banner({ images });
+      await newBanner.save(); // Save the banner document
+
+      res.status(201).json({
+        message: "Banners uploaded successfully",
+        images: newBanner.images, // Return the array of uploaded images
+      });
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+};
+
+
+
+// Controller function to get all banners
+exports.getAllBanners = async (req, res) => {
+  try {
+    // Find all banners in the database
+    const banners = await Banner.find();
+
+    if (!banners || banners.length === 0) {
+      return res.status(404).json({ error: "No banners found" });
+    }
+
+    res.status(200).json({
+      message: "Banners fetched successfully",
+      banners: banners, // Return all banners with their image paths
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 };
 

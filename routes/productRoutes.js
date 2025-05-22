@@ -16,7 +16,9 @@ const {
   getBestSellers,
   getOnSaleProducts,
   addRecentlyViewed,
-  getRecentlyViewed
+  getRecentlyViewed,
+  uploadBanners,
+  getAllBanners
 } = require('../controllers/productController');
 
 router.post('/create-product', createProduct);
@@ -43,6 +45,8 @@ router.get('/on-sale', getOnSaleProducts);
 
 router.post('/recently-viewed/:userId', addRecentlyViewed);
 router.get('/recently-viewed/:userId', getRecentlyViewed);
+router.post('/uploadbanners', uploadBanners);
+router.get('/getbanners', getAllBanners);
 
 
 

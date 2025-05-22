@@ -5,35 +5,79 @@ const Order = require('../models/OrderModel');
 const QRCode = require('qrcode');  // Import the qrcode package
 
 
-// POST /api/login
-exports.loginUser = async (req, res) => {
-  const { username, mobileNumber } = req.body;
+
+const jwt = require("jsonwebtoken");
+require("dotenv").config(); // make sure this is at the top of your main file (e.g. app.js)
+
+const JWT_SECRET = process.env.JWT_SECRET_KEY;
+
+
+
+
+exports.registerUser = async (req, res) => {
+  const { fullName, email, mobileNumber, password, confirmPassword } = req.body;
+
+  if (password !== confirmPassword) {
+    return res.status(400).json({ error: "Passwords do not match." });
+  }
+
   try {
-    let user = await User.findOne({ mobileNumber });
+    const existingEmail = await User.findOne({ email });
+    const existingMobile = await User.findOne({ mobileNumber });
 
-    if (user) {
-      user.username = username;
-      await user.save();
-    } else {
-      user = new User({ username, mobileNumber });
-      await user.save();
+    if (existingEmail || existingMobile) {
+      return res.status(400).json({ error: "Email or mobile number already exists." });
     }
 
-    // Find the user based on mobile number and username
-    const existingUser = await User.findOne({ username, mobileNumber });
+    const user = new User({ fullName, email, mobileNumber, password });
+    await user.save();
 
-    if (!existingUser) {
-      return res.status(404).json({ error: "User not found. Please sign up." });
+    res.status(201).json({ message: "Registration successful", userId: user._id });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Server error" });
+  }
+};
+
+
+exports.loginUser = async (req, res) => {
+  const { identifier, password } = req.body;
+
+  try {
+    const user = await User.findOne({
+      $or: [{ email: identifier }, { mobileNumber: identifier }],
+    });
+
+    if (!user) {
+      return res.status(404).json({ error: "User not found. Please register." });
     }
+
+    const isMatch = await user.comparePassword(password);
+
+    if (!isMatch) {
+      return res.status(400).json({ error: "Invalid credentials." });
+    }
+
+    // ✅ Generate JWT Token (7 days expiry)
+    const token = jwt.sign(
+      {
+        userId: user._id,
+        isAdmin: user.isAdmin,
+      },
+      JWT_SECRET,
+      { expiresIn: "7d" }
+    );
 
     res.status(200).json({
       message: "Login successful",
+      token,
       user: {
-        _id: existingUser._id,
-        username: existingUser.username,
-        mobileNumber: existingUser.mobileNumber,
-        isAdmin: existingUser.isAdmin
-      }
+        _id: user._id,
+        fullName: user.fullName,
+        email: user.email,
+        mobileNumber: user.mobileNumber,
+        isAdmin: user.isAdmin,
+      },
     });
 
   } catch (err) {
@@ -41,6 +85,7 @@ exports.loginUser = async (req, res) => {
     res.status(500).json({ error: "Server error" });
   }
 };
+
 
 // ✅ GET /api/user/:userId
 exports.getUserById = async (req, res) => {
@@ -765,6 +810,73 @@ exports.getAllOrders = async (req, res) => {
 
 
 
+
+exports.updateOrderStatus = async (req, res) => {
+  try {
+    const orderId = req.params.orderId;
+    const { orderStatus } = req.body;
+
+    if (!orderStatus) {
+      return res.status(400).json({ message: 'Order status is required' });
+    }
+
+    const order = await Order.findById(orderId);
+    if (!order) {
+      return res.status(404).json({ message: 'Order not found' });
+    }
+
+    order.orderStatus = orderStatus;
+    order.statusHistory.push({ status: orderStatus, updatedAt: new Date() });
+
+    await order.save();
+
+    res.status(200).json({
+      message: 'Order status updated successfully',
+      updatedStatus: order.orderStatus,
+      orderId: order._id
+    });
+  } catch (error) {
+    console.error('Error updating order status:', error);
+    return res.status(500).json({ message: 'Server error' });
+  }
+};
+
+
+
+
+exports.updatePaymentStatus = async (req, res) => {
+  try {
+    const orderId = req.params.orderId;
+    const { paymentStatus } = req.body;
+
+    if (!paymentStatus) {
+      return res.status(400).json({ message: 'Payment status is required' });
+    }
+
+    const order = await Order.findById(orderId);
+
+    if (!order) {
+      return res.status(404).json({ message: 'Order not found' });
+    }
+
+    order.paymentStatus = paymentStatus;
+    await order.save();
+
+    res.status(200).json({
+      message: 'Payment status updated successfully',
+      updatedStatus: order.paymentStatus,
+      orderId: order._id
+    });
+  } catch (error) {
+    console.error('Error updating payment status:', error);
+    return res.status(500).json({ message: 'Server error' });
+  }
+};
+
+
+
+
+
 exports.getMyOrders = async (req, res) => {
   const { userId } = req.params;
 
@@ -800,3 +912,96 @@ exports.getMyOrders = async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 };
+
+
+exports.uploadProfileImage = async (req, res) => {
+  try {
+    const userId = req.params.userId;
+    const imagePath = req.file.filename;
+
+    const user = await User.findByIdAndUpdate(
+      userId,
+      { profileImage: imagePath },
+      { new: true }
+    );
+
+    if (!user) return res.status(404).json({ error: 'User not found' });
+
+    res.status(200).json({
+      message: 'Profile image uploaded successfully',
+      profileImage: `/uploads/profileImages/${user.profileImage}`
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+exports.updateProfileImage = async (req, res) => {
+  try {
+    const userId = req.params.userId;  // Now from URL params
+    const imagePath = req.file.filename;
+
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ error: 'User not found' });
+
+    user.profileImage = imagePath;
+    await user.save();
+
+    res.status(200).json({
+      message: 'Profile image updated successfully',
+      profileImage: `/uploads/profileImages/${user.profileImage}`
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+
+exports.getOrderStatusHistory = async (req, res) => {
+  try {
+    const { userId, orderId } = req.params;
+
+    const order = await Order.findById(orderId).select('statusHistory userId');
+
+    if (!order) {
+      return res.status(404).json({ message: 'Order not found' });
+    }
+
+    // Check if the order belongs to the user
+    if (order.userId.toString() !== userId) {
+      return res.status(403).json({ message: 'You are not authorized to view this order status' });
+    }
+
+    res.status(200).json({
+      message: 'Order status history fetched successfully',
+      statusHistory: order.statusHistory
+    });
+  } catch (error) {
+    console.error('Error fetching status history:', error);
+    return res.status(500).json({ message: 'Server error' });
+  }
+};
+
+
+
+exports.getTotalRevenue = async (req, res) => {
+  try {
+    // Only include orders that are completed and/or paid
+    const completedOrders = await Order.find({
+      paymentStatus: 'Paid' // or use orderStatus: 'Delivered', if needed
+    });
+
+    const totalRevenue = completedOrders.reduce((acc, order) => acc + order.totalAmount, 0);
+
+    res.status(200).json({
+      message: 'Total revenue fetched successfully',
+      totalRevenue,
+      numberOfOrders: completedOrders.length
+    });
+  } catch (error) {
+    console.error('Error calculating revenue:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+

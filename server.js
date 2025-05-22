@@ -23,6 +23,9 @@ app.use(bodyParser.json());
 
 dotEnv.config();
 
+app.use('/uploads', express.static('uploads'));
+
+
 // MongoDB Connection
 mongoose.connect(process.env.MONGODB)
     .then(() => {
