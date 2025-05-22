@@ -1,87 +1,83 @@
 const mongoose = require("mongoose");
+const bcrypt = require("bcryptjs");
 const addressSchema = require("./Address");
-const profileSchema = require('./Profile');
+const profileSchema = require("./Profile");
 
 const userSchema = new mongoose.Schema({
   fullName: String,
-  mobileNumber: {
-    type: Number,
+  email: {
+    type: String,
     required: true,
-    match: /^[0-9]{10}$/, // Enforces 10-digit numbers
     unique: true
+  },
+  mobileNumber: {
+    type: String,
+    required: true,
+    match: /^[0-9]{10}$/,
+    unique: true
+  },
+  password: {
+    type: String,
+    required: true
   },
   profile: profileSchema,
 
-  // Instead of embedding products directly, you can reference the Cart model
   myCart: [{
     type: mongoose.Schema.Types.ObjectId,
-    ref: "Cart"  // Reference to the Cart model, which will hold products and their details
+    ref: "Cart"
   }],
 
   profileImage: {
-  type: String, // This will store the filename or image URL
-  default: '',  // Or a default avatar if you want
-},
+    type: String,
+    default: ''
+  },
 
-statusHistory: [
-  {
-    status: { type: String },
+  statusHistory: [{
+    status: String,
     updatedAt: { type: Date, default: Date.now }
-  }
-],
+  }],
 
-  // User summary fields that can be updated based on cart calculations
-  totalItems: {
-    type: Number,
-    default: 0,
-  },
-  subTotal: {
-    type: Number,
-    default: 0,
-  },
-  cartTotal: {
-    type: Number,
-    default: 0,
-  },
-  deliveryCharge: {
-    type: Number,
-    default: 0,
-  },
-  finalAmount: {
-    type: Number,
-    default: 0,
-  },
-  totalPrice: {
-    type: Number,
-    default: 0,
-  },
+  totalItems: { type: Number, default: 0 },
+  subTotal: { type: Number, default: 0 },
+  cartTotal: { type: Number, default: 0 },
+  deliveryCharge: { type: Number, default: 0 },
+  finalAmount: { type: Number, default: 0 },
+  totalPrice: { type: Number, default: 0 },
 
-  // Wishlist
-  myWishlist: [
-    {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Product"
-    }
-  ],
+  myWishlist: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Product"
+  }],
 
-  // Orders (previously placed)
-  myOrders: [
-    {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Order"
-    }
-  ],
+  myOrders: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Order"
+  }],
+
   recentlyViewed: [{
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Product'
+    ref: "Product"
   }],
+
   isAdmin: {
     type: Boolean,
-    default: false,
+    default: false
   },
 
-  // Addresses array
-  addresses: [addressSchema]  // Assuming Address schema is defined separately
+  addresses: [addressSchema]
 });
+
+// Password hashing before saving
+userSchema.pre("save", async function (next) {
+  if (!this.isModified("password")) return next();
+  const salt = await bcrypt.genSalt(10);
+  this.password = await bcrypt.hash(this.password, salt);
+  next();
+});
+
+// Password comparison method
+userSchema.methods.comparePassword = async function (enteredPassword) {
+  return await bcrypt.compare(enteredPassword, this.password);
+};
 
 module.exports = mongoose.model("User", userSchema);
