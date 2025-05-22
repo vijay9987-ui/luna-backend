@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 const {
     loginUser,
+    registerUser,
     getUserById,
     updateUser,
     getAllUsers,
@@ -32,7 +33,7 @@ const {
 const upload = require('../middleware/upload.js')
 
 router.post("/login", loginUser);
-
+router.post("/register", registerUser);
 // Updated routes to use userId instead of mobileNumber
 router.get("/getuser/:userId", getUserById);
 router.put("/setuser/:userId", updateUser);
