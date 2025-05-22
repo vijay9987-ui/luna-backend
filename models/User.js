@@ -3,7 +3,7 @@ const addressSchema = require("./Address");
 const profileSchema = require('./Profile');
 
 const userSchema = new mongoose.Schema({
-  username: String,
+  fullName: String,
   mobileNumber: {
     type: Number,
     required: true,
