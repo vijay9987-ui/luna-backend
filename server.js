@@ -5,7 +5,8 @@ const bodyParser = require("body-parser");
 const userRoutes = require("./routes/userRoutes");
 const dotEnv = require('dotenv');
 const categoryRoutes = require("./routes/categoryRoutes")
-const productRoutes = require("./routes/productRoutes")
+const productRoutes = require("./routes/productRoutes");
+const path = require('path');
 
 
 
@@ -41,7 +42,8 @@ app.use("/api/category", categoryRoutes);
 app.use("/api/products", productRoutes);
 
 
-
+// 👇 This line serves images from the folder
+app.use('/uploads/profileImages', express.static(path.join(__dirname, 'uploads/profileImages')));
 
 
 
