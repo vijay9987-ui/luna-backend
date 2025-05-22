@@ -24,7 +24,7 @@ app.use(bodyParser.json());
 
 dotEnv.config();
 
-app.use('/uploads', express.static('uploads'));
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 
 // MongoDB Connection
