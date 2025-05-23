@@ -39,7 +39,6 @@ exports.registerUser = async (req, res) => {
   }
 };
 
-
 exports.loginUser = async (req, res) => {
   const { identifier, password } = req.body;
 
@@ -77,6 +76,7 @@ exports.loginUser = async (req, res) => {
         email: user.email,
         mobileNumber: user.mobileNumber,
         isAdmin: user.isAdmin,
+        profileImage: user.profileImage || null, // Include profileImage if it exists
       },
     });
 
@@ -85,7 +85,6 @@ exports.loginUser = async (req, res) => {
     res.status(500).json({ error: "Server error" });
   }
 };
-
 
 // ✅ GET /api/user/:userId
 exports.getUserById = async (req, res) => {
