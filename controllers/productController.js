@@ -291,40 +291,34 @@ exports.getRecentlyViewed = async (req, res) => {
 
 
 //banner code 
-// Set storage engine for banner images
+// Define storage strategy
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    cb(null, 'uploads/banners/'); // Upload to the banners folder
+    cb(null, 'uploads/banners/');
   },
   filename: function (req, file, cb) {
-    const ext = path.extname(file.originalname); // Get the file extension
-    cb(null, Date.now() + '-' + Math.round(Math.random() * 1E9) + ext); // Unique file name
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, uniqueSuffix + path.extname(file.originalname));
   }
 });
 
-// File filter for images only
+// Set file filter (optional, for image type checking)
 const fileFilter = (req, file, cb) => {
   if (file.mimetype.startsWith('image/')) {
-    cb(null, true); // Accept image files
+    cb(null, true);
   } else {
-    cb(new Error('Only image files are allowed!'), false); // Reject non-image files
+    cb(new Error('Only image files are allowed!'), false);
   }
 };
 
-// Multer setup
-const upload = multer({
-  storage: storage,
-  fileFilter: fileFilter,
-  limits: {
-    fileSize: 1024 * 1024 * 5 // Max 5MB per file
-  }
-}).array('images[]', 10); // Handle multiple banner images (up to 10)
+const upload = multer({ storage, fileFilter });
 
-// Controller function to handle banner uploads
+// Export the configured middleware
 exports.uploadBanners = (req, res) => {
-  upload(req, res, async (err) => {
+  const bannerUpload = upload.array('images', 10); // Accept up to 10 files with field name 'images'
+
+  bannerUpload(req, res, async (err) => {
     try {
-      // If any error occurs during the file upload process
       if (err) {
         return res.status(400).json({ error: err.message });
       }
@@ -333,23 +327,20 @@ exports.uploadBanners = (req, res) => {
         return res.status(400).json({ error: "No files uploaded" });
       }
 
-      // Map the uploaded files to the image paths
       const images = req.files.map(file => `/uploads/banners/${file.filename}`);
 
-      // Create a new Banner document with the array of images
       const newBanner = new Banner({ images });
-      await newBanner.save(); // Save the banner document
+      await newBanner.save();
 
       res.status(201).json({
         message: "Banners uploaded successfully",
-        images: newBanner.images, // Return the array of uploaded images
+        images: newBanner.images,
       });
     } catch (err) {
       res.status(500).json({ error: err.message });
     }
   });
 };
-
 
 
 // Controller function to get all banners

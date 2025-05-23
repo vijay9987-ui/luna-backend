@@ -961,19 +961,24 @@ exports.getProfileImage = async (req, res) => {
     const userId = req.params.userId;
 
     const user = await User.findById(userId);
-    if (!user) return res.status(404).json({ error: 'User not found' });
+
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
 
     if (!user.profileImage) {
-      return res.status(404).json({ error: 'Profile image not set' });
+      return res.status(404).json({ error: 'Profile image not found' });
     }
 
     res.status(200).json({
+      message: 'Profile image retrieved successfully',
       profileImage: `/uploads/profileImages/${user.profileImage}`,
     });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 };
+
 
 
 exports.getOrderStatusHistory = async (req, res) => {

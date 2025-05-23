@@ -62,7 +62,7 @@ router.get('/revenue', getTotalRevenue);
 router.get("/allorders", getAllOrders);
 router.post('/uploadprofile/:userId',upload.single('profileImage'), uploadProfileImage);
 router.put('/updateprofile/:userId', upload.single('profileImage'), updateProfileImage);
-router.get('/profile-image/:userId', getProfileImage);
+router.get('/profile/:userId', getProfileImage);
 
 
 module.exports = router;
