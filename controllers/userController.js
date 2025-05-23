@@ -76,7 +76,7 @@ exports.loginUser = async (req, res) => {
         email: user.email,
         mobileNumber: user.mobileNumber,
         isAdmin: user.isAdmin,
-        profileImage: user.profileImage ? `/uploads/profileImages/${user.profileImage}` : null
+        profileImage: user.profileImage ? `/uploads/profile/${user.profileImage}` : null
 
       },
     });
