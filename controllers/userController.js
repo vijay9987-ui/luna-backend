@@ -998,7 +998,7 @@ exports.getOrderStatusHistory = async (req, res) => {
 
     res.status(200).json({
       message: 'Order status history fetched successfully',
-      statusHistory: order.orderStatus
+      statusHistory: order.statusHistory
     });
   } catch (error) {
     console.error('Error fetching status history:', error);
