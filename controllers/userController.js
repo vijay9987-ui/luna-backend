@@ -157,7 +157,7 @@ exports.updateProfileUser = async (req, res) => {
     user.profile.firstName = firstName || user.profile.firstName;
     user.profile.lastName = lastName || user.profile.lastName;
     user.profile.gender = gender || user.profile.gender;
-    
+
 
     if (mobile) user.mobileNumber = mobile;
     if (email) user.email = email;
@@ -1031,3 +1031,48 @@ exports.getTotalRevenue = async (req, res) => {
 };
 
 
+exports.cancelOrder = async (req, res) => {
+  try {
+    const { userId, orderId } = req.params;
+    const { cancellationReason } = req.body;
+
+    if (!cancellationReason) {
+      return res.status(400).json({ message: 'Cancellation reason is required' });
+    }
+
+    const order = await Order.findById(orderId);
+
+    if (!order) {
+      return res.status(404).json({ message: 'Order not found' });
+    }
+
+    // Check if the order belongs to the user
+    if (order.userId.toString() !== userId) {
+      return res.status(403).json({ message: 'You are not authorized to cancel this order' });
+    }
+
+    // Check if order is already cancelled
+    if (order.status === 'Cancelled') {
+      return res.status(400).json({ message: 'Order is already cancelled' });
+    }
+
+    // Update order status and push to status history
+    order.status = 'Cancelled';
+    order.statusHistory.push({
+      status: 'Cancelled',
+      reason: cancellationReason,
+      date: new Date()
+    });
+
+    await order.save();
+
+    res.status(200).json({
+      message: 'Order cancelled successfully',
+      orderId: order._id,
+      status: order.status
+    });
+  } catch (error) {
+    console.error('Error cancelling order:', error);
+    return res.status(500).json({ message: 'Server error' });
+  }
+};

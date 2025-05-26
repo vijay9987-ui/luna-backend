@@ -29,7 +29,8 @@ const {
     updatePaymentStatus,
     getOrderStatusHistory,
     getTotalRevenue,
-    getProfileImage
+    getProfileImage,
+    cancelOrder
 } = require("../controllers/userController");
 const upload = require('../middleware/upload.js')
 
@@ -63,6 +64,7 @@ router.get("/allorders", getAllOrders);
 router.post('/uploadprofile/:userId',upload.single('profileImage'), uploadProfileImage);
 router.put('/updateprofile/:userId', upload.single('profileImage'), updateProfileImage);
 router.get('/profile/:userId', getProfileImage);
+router.post('/cancelorder/:userId/:orderId', cancelOrder);
 
 
 module.exports = router;
