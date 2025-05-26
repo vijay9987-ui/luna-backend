@@ -47,12 +47,18 @@ const OrderSchema = new mongoose.Schema({
     type: Number,
     default: 0,   // Default delivery charge can be 0, or whatever you need
   },
-  statusHistory: [
-  {
-    status: String,
-    updatedAt: Date
-  }
-],
+   statusHistory: [
+    {
+      status: {
+        type: String,
+        required: true
+      },
+      updatedAt: {
+        type: Date,
+        default: Date.now
+      }
+    }
+  ],
     createdAt: {
       type: Date,
       default: Date.now,
