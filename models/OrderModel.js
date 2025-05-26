@@ -59,6 +59,10 @@ const OrderSchema = new mongoose.Schema({
       }
     }
   ],
+  cancellationReason: {
+    type: String,
+    default: null,
+  },
     createdAt: {
       type: Date,
       default: Date.now,
