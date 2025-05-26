@@ -157,9 +157,10 @@ exports.updateProfileUser = async (req, res) => {
     user.profile.firstName = firstName || user.profile.firstName;
     user.profile.lastName = lastName || user.profile.lastName;
     user.profile.gender = gender || user.profile.gender;
-    user.profile.email = email || user.profile.email;
+    
 
     if (mobile) user.mobileNumber = mobile;
+    if (email) user.email = email;
 
     await user.save();
 
@@ -167,6 +168,7 @@ exports.updateProfileUser = async (req, res) => {
       message: "Profile updated successfully",
       profile: user.profile,
       mobileNumber: user.mobileNumber,
+      email: user.email,
     });
   } catch (error) {
     console.error("Error updating profile:", error);
@@ -187,10 +189,10 @@ exports.createProfileData = async (req, res) => {
       firstName,
       lastName,
       gender,
-      email,
     };
 
     user.mobileNumber = mobile;
+    user.email = email;
 
     await user.save();
     res.status(200).json({ message: "Profile saved successfully", user });
