@@ -362,3 +362,31 @@ exports.getAllBanners = async (req, res) => {
   }
 };
 
+const fs = require('fs');
+
+
+exports.deleteBanner = async (req, res) => {
+  try {
+    const banner = await Banner.findById(req.params.id);
+
+    if (!banner) {
+      return res.status(404).json({ error: 'Banner not found' });
+    }
+
+    // Delete image files from the filesystem
+    banner.images.forEach((imagePath) => {
+      const fullPath = path.join(__dirname, '..', imagePath);
+      if (fs.existsSync(fullPath)) {
+        fs.unlinkSync(fullPath);
+      }
+    });
+
+    // Delete the banner document from MongoDB
+    await Banner.findByIdAndDelete(req.params.id);
+
+    res.status(200).json({ message: 'Banner deleted successfully' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to delete banner' });
+  }
+};

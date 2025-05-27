@@ -18,7 +18,8 @@ const {
   addRecentlyViewed,
   getRecentlyViewed,
   uploadBanners,
-  getAllBanners
+  getAllBanners,
+  deleteBanner
 } = require('../controllers/productController');
 
 router.post('/create-product', createProduct);
@@ -48,7 +49,7 @@ router.get('/recently-viewed/:userId', getRecentlyViewed);
 router.post('/uploadbanners', uploadBanners);
 router.get('/getbanners', getAllBanners);
 
-
+router.delete('/deletebanner/:id', deleteBanner);
 
 
 module.exports = router;
