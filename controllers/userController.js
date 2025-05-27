@@ -1045,7 +1045,7 @@ exports.getTotalRevenue = async (req, res) => {
   try {
     // Only include orders that are completed and/or paid
     const completedOrders = await Order.find({
-      paymentStatus: 'Paid' // or use orderStatus: 'Delivered', if needed
+      paymentStatus: 'Completed' // or use orderStatus: 'Delivered', if needed
     });
 
     const totalRevenue = completedOrders.reduce((acc, order) => acc + order.totalAmount, 0);
