@@ -4,16 +4,105 @@ const multer = require('multer');
 const path = require('path');
 const Banner = require('../models/Banner');
 
-// Create product
-exports.createProduct = async (req, res) => {
-  try {
-    const newProduct = new Product(req.body);
-    const savedProduct = await newProduct.save();
-    res.status(201).json(savedProduct);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
+// ✅ Multer Storage for Product Images Only
+const productStorage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, 'uploads/products/'); // Folder: uploads/products/
+  },
+  filename: function (req, file, cb) {
+    const uniqueName = Date.now() + '-' + file.originalname;
+    cb(null, uniqueName);
   }
+});
+
+const uploadProduct = multer({ storage: productStorage });
+exports.createProduct = (req, res) => {
+  const upload = uploadProduct.array('images', 5); // Max 5 images
+
+  upload(req, res, async (err) => {
+    try {
+      if (err) return res.status(400).json({ error: err.message });
+
+      if (!req.files || req.files.length === 0) {
+        return res.status(400).json({ error: 'No images uploaded' });
+      }
+
+      const images = req.files.map(file => `/uploads/products/${file.filename}`);
+
+      // Convert sizes/colors from comma-separated string to array
+      const sizes = req.body.sizes ? req.body.sizes.split(',').map(s => s.trim()) : [];
+      const colors = req.body.colors ? req.body.colors.split(',').map(c => c.trim()) : [];
+
+      const newProduct = new Product({
+        ...req.body,
+        images,
+        sizes,
+        colors,
+      });
+
+      const savedProduct = await newProduct.save();
+
+      res.status(201).json({
+        message: 'Product created successfully',
+        product: savedProduct,
+      });
+    } catch (error) {
+      console.error('Error creating product:', error);
+      res.status(500).json({ error: 'Server error while creating product' });
+    }
+  });
 };
+
+exports.updateProduct = (req, res) => {
+  const productUpload = upload.array("images", 5);
+
+  productUpload(req, res, async (err) => {
+    try {
+      if (err) {
+        return res.status(400).json({ error: err.message });
+      }
+
+      const productId = req.params.id;
+      const existingProduct = await Product.findById(productId);
+      if (!existingProduct) {
+        return res.status(404).json({ message: "Product not found" });
+      }
+
+      let updateData = {
+        ...req.body,
+      };
+
+      // Convert sizes/colors from comma-separated string to array
+      if (req.body.sizes) {
+        updateData.sizes = req.body.sizes.split(',').map(s => s.trim());
+      }
+      if (req.body.colors) {
+        updateData.colors = req.body.colors.split(',').map(c => c.trim());
+      }
+
+      if (req.files && req.files.length > 0) {
+        const imagePaths = req.files.map(file => `/uploads/products/${file.filename}`);
+        updateData.images = imagePaths;
+      }
+
+      const updatedProduct = await Product.findByIdAndUpdate(
+        productId,
+        updateData,
+        { new: true }
+      );
+
+      return res.status(200).json({
+        message: "Product updated successfully",
+        product: updatedProduct,
+      });
+
+    } catch (error) {
+      console.error("Update Error:", error);
+      return res.status(500).json({ error: "Internal Server Error" });
+    }
+  });
+};
+
 
 // Get all products
 exports.getAllProducts = async (req, res) => {
@@ -135,20 +224,6 @@ exports.getAllCategories = async (req, res) => {
 
 
 
-// Update product
-exports.updateProduct = async (req, res) => {
-  try {
-    const updatedProduct = await Product.findByIdAndUpdate(
-      req.params.id,
-      req.body,
-      { new: true }
-    );
-    if (!updatedProduct) return res.status(404).json({ message: "Product not found" });
-    res.status(200).json(updatedProduct);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-};
 
 // Delete product
 exports.deleteProduct = async (req, res) => {

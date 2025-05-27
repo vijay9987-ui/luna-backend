@@ -3,13 +3,13 @@ const mongoose = require('mongoose');
 const ProductSchema = new mongoose.Schema({
   name: {
     type: String,
-    required: true,
+
   },
   description: String,
   images: [String],
   price: {
     type: Number,
-    required: true,
+
   },
   originalPrice: Number,
   discount: {
@@ -30,11 +30,11 @@ const ProductSchema = new mongoose.Schema({
   },
   categoryName: {
     type: String,
-    required: true,
+    
   },
   subcategoryName: {
     type: String,
-    required: true,
+    
   },
   sizes: [String],
   colors: [String],
