@@ -760,14 +760,47 @@ exports.placeOrder = async (req, res) => {
 };
 
 
-
 exports.getAllOrders = async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
     const skip = (page - 1) * limit;
 
-    const orders = await Order.find()
+    const { status, date, search } = req.query;
+
+    const filter = {};
+
+    // Status filter
+    if (status) {
+      filter.orderStatus = status;
+    }
+
+    // Date filter (match only date part)
+    if (date) {
+      const start = new Date(date);
+      const end = new Date(date);
+      end.setDate(end.getDate() + 1);
+      filter.createdAt = { $gte: start, $lt: end };
+    }
+
+    // Search filter (match on user's email or shipping full name)
+    if (search) {
+      const searchRegex = new RegExp(search, 'i');
+
+      // First find matching users
+      const users = await User.find({ email: searchRegex }).select('_id');
+      const userIds = users.map(u => u._id);
+
+      // Apply OR filter for userId or shippingAddress.fullName
+      filter.$or = [
+        { userId: { $in: userIds } },
+        { 'shippingAddress.fullName': searchRegex }
+      ];
+    }
+
+    const totalOrders = await Order.countDocuments(filter);
+
+    const orders = await Order.find(filter)
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit)
@@ -781,8 +814,6 @@ exports.getAllOrders = async (req, res) => {
       return res.status(404).json({ message: "No orders found" });
     }
 
-    const totalOrders = await Order.countDocuments();
-
     return res.status(200).json({
       message: "Orders fetched successfully",
       currentPage: page,
@@ -791,9 +822,9 @@ exports.getAllOrders = async (req, res) => {
       orders: orders.map(order => ({
         orderId: order._id,
         user: {
-          id: order.userId._id,
-          name: order.userId.name,
-          email: order.userId.email
+          id: order.userId?._id,
+          name: order.userId?.name,
+          email: order.userId?.email
         },
         products: order.products,
         shippingAddress: order.shippingAddress,
