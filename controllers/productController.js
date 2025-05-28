@@ -54,7 +54,7 @@ exports.createProduct = (req, res) => {
 };
 
 exports.updateProduct = (req, res) => {
-  const productUpload = upload.array("images", 5);
+  const productUpload = uploadProduct.array("images", 5);
 
   productUpload(req, res, async (err) => {
     try {
